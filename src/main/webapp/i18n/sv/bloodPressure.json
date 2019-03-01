@@ -1,0 +1,25 @@
+{
+    "healthPointsApp": {
+        "bloodPressure": {
+            "home": {
+                "title": "Blood Pressures",
+                "createLabel": "Skapa en ny Blood Pressure",
+                "createOrEditLabel": "Skapa eller ändra en Blood Pressure",
+                "search": "Sök efter Blood Pressure"
+            },
+            "created": "En ny Blood Pressure är skapad med id {{ param }}",
+            "updated": "En Blood Pressure är uppdaterad med id  {{ param }}",
+            "deleted": "En Blood Pressure är borttagen med id  {{ param }}",
+            "delete": {
+                "question": "Är du säker på att du vill ta bort Blood Pressure {{ id }}?"
+            },
+            "detail": {
+                "title": "Blood Pressure"
+            },
+            "timestamp": "Timestamp",
+            "systolic": "Systolic",
+            "diastolic": "Diastolic",
+            "user": "User"
+        }
+    }
+}

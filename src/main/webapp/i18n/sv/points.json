@@ -1,0 +1,27 @@
+{
+    "healthPointsApp": {
+        "points": {
+            "home": {
+                "title": "Points",
+                "createLabel": "Skapa en ny Points",
+                "createOrEditLabel": "Skapa eller ändra en Points",
+                "search": "Sök efter Points"
+            },
+            "created": "En ny Points är skapad med id {{ param }}",
+            "updated": "En Points är uppdaterad med id  {{ param }}",
+            "deleted": "En Points är borttagen med id  {{ param }}",
+            "delete": {
+                "question": "Är du säker på att du vill ta bort Points {{ id }}?"
+            },
+            "detail": {
+                "title": "Points"
+            },
+            "date": "Date",
+            "exercise": "Exercise",
+            "meals": "Meals",
+            "alcohol": "Alcohol",
+            "notes": "Notes",
+            "user": "User"
+        }
+    }
+}

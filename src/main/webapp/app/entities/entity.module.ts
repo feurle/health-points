@@ -4,6 +4,22 @@ import { RouterModule } from '@angular/router';
 @NgModule({
     imports: [
         RouterModule.forChild([
+            {
+                path: 'blood-pressure',
+                loadChildren: './blood-pressure/blood-pressure.module#HealthPointsBloodPressureModule'
+            },
+            {
+                path: 'weight',
+                loadChildren: './weight/weight.module#HealthPointsWeightModule'
+            },
+            {
+                path: 'points',
+                loadChildren: './points/points.module#HealthPointsPointsModule'
+            },
+            {
+                path: 'preferences',
+                loadChildren: './preferences/preferences.module#HealthPointsPreferencesModule'
+            }
             /* jhipster-needle-add-entity-route - JHipster will add entity modules routes here */
         ])
     ],
