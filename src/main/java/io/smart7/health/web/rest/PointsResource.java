@@ -1,11 +1,16 @@
 package io.smart7.health.web.rest;
+import io.micrometer.core.annotation.Timed;
 import io.smart7.health.domain.Points;
 import io.smart7.health.repository.PointsRepository;
+import io.smart7.health.repository.UserRepository;
 import io.smart7.health.repository.search.PointsSearchRepository;
+import io.smart7.health.security.AuthoritiesConstants;
+import io.smart7.health.security.SecurityUtils;
 import io.smart7.health.web.rest.errors.BadRequestAlertException;
 import io.smart7.health.web.rest.util.HeaderUtil;
 import io.smart7.health.web.rest.util.PaginationUtil;
 import io.github.jhipster.web.util.ResponseUtil;
+import io.smart7.health.web.rest.vm.PointsPerWeek;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -19,6 +24,9 @@ import javax.validation.Valid;
 import java.net.URI;
 import java.net.URISyntaxException;
 
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -39,11 +47,14 @@ public class PointsResource {
 
     private final PointsRepository pointsRepository;
 
+    private final UserRepository userRepository;
+
     private final PointsSearchRepository pointsSearchRepository;
 
-    public PointsResource(PointsRepository pointsRepository, PointsSearchRepository pointsSearchRepository) {
+    public PointsResource(PointsRepository pointsRepository, PointsSearchRepository pointsSearchRepository, UserRepository userRepository) {
         this.pointsRepository = pointsRepository;
         this.pointsSearchRepository = pointsSearchRepository;
+        this.userRepository = userRepository;
     }
 
     /**
@@ -58,6 +69,10 @@ public class PointsResource {
         log.debug("REST request to save Points : {}", points);
         if (points.getId() != null) {
             throw new BadRequestAlertException("A new points cannot already have an ID", ENTITY_NAME, "idexists");
+        }
+        if (!SecurityUtils.isCurrentUserInRole(AuthoritiesConstants.ADMIN)) {
+            log.debug("No user passed in, using current user: {}", SecurityUtils.getCurrentUserLogin());
+            points.setUser(userRepository.findOneByLogin(SecurityUtils.getCurrentUserLogin().get()).get());
         }
         Points result = pointsRepository.save(points);
         pointsSearchRepository.save(result);
@@ -97,7 +112,12 @@ public class PointsResource {
     @GetMapping("/points")
     public ResponseEntity<List<Points>> getAllPoints(Pageable pageable) {
         log.debug("REST request to get a page of Points");
-        Page<Points> page = pointsRepository.findAll(pageable);
+        Page<Points> page;
+        if (SecurityUtils.isCurrentUserInRole(AuthoritiesConstants.ADMIN)) {
+            page = pointsRepository.findAllByOrderByDateDesc(pageable);
+        } else {
+            page = pointsRepository.findByUserIsCurrentUser(pageable);
+        }
         HttpHeaders headers = PaginationUtil.generatePaginationHttpHeaders(page, "/api/points");
         return ResponseEntity.ok().headers(headers).body(page.getContent());
     }
@@ -145,4 +165,36 @@ public class PointsResource {
         return ResponseEntity.ok().headers(headers).body(page.getContent());
     }
 
+
+    /**
+     * GET /points : get all the points for the current week.
+     */
+    @GetMapping("/points-this-week")
+    @Timed
+    public ResponseEntity<PointsPerWeek> getPointsThisWeek(@RequestParam(value="tz", required=false) String timezone) {
+
+        // Get current date (with timezone if passed in)
+        LocalDate now = LocalDate.now();
+        if (timezone != null) {
+            now = LocalDate.now(ZoneId.of(timezone));
+        }
+        // Get first day of week
+        LocalDate startOfWeek = now.with(DayOfWeek.MONDAY);
+        // Get last day of week
+        LocalDate endOfWeek = now.with(DayOfWeek.SUNDAY);
+        log.debug("Looking for points between: {} and {}", startOfWeek, endOfWeek);
+
+        List<Points> points = pointsRepository.findAllByDateBetweenAndUserLogin(startOfWeek, endOfWeek, SecurityUtils.getCurrentUserLogin().get());
+
+        return calculatePoints(startOfWeek, points);
+    }
+
+    private ResponseEntity<PointsPerWeek> calculatePoints(LocalDate startOfWeek, List<Points> points) {
+        Integer numPoints = points.stream()
+            .mapToInt(p -> p.getExercise() + p.getMeals() + p.getAlcohol())
+            .sum();
+
+        PointsPerWeek count = new PointsPerWeek(startOfWeek, numPoints);
+        return new ResponseEntity<>(count, HttpStatus.OK);
+    }
 }

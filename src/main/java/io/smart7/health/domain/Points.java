@@ -49,6 +49,18 @@ public class Points implements Serializable {
     @JsonIgnoreProperties("points")
     private User user;
 
+
+    public Points() {
+    }
+
+    public Points(LocalDate date, Integer exercises, Integer meals, Integer alcohol, User user) {
+        this.date = date;
+        this.exercise = exercises;
+        this.meals = meals;
+        this.alcohol = alcohol;
+        this.user = user;
+    }
+
     // jhipster-needle-entity-add-field - JHipster will add fields here, do not remove
     public Long getId() {
         return id;

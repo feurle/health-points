@@ -2,10 +2,10 @@
     "healthPointsApp": {
         "points": {
             "home": {
-                "title": "Points",
-                "createLabel": "Points erstellen",
-                "createOrEditLabel": "Points erstellen oder bearbeiten",
-                "search": "Suche nach Points"
+                "title": "Punkte",
+                "createLabel": "Punkte erstellen",
+                "createOrEditLabel": "Punkte hinzufügen",
+                "search": "Suche nach Punkten"
             },
             "created": "Points erstellt mit ID {{ param }}",
             "updated": "Points aktualisiert mit ID {{ param }}",
@@ -14,13 +14,13 @@
                 "question": "Soll Points {{ id }} wirklich dauerhaft gelöscht werden?"
             },
             "detail": {
-                "title": "Points"
+                "title": "Punkte"
             },
-            "date": "Date",
-            "exercise": "Exercise",
-            "meals": "Meals",
-            "alcohol": "Alcohol",
-            "notes": "Notes",
+            "date": "Datum",
+            "exercise": "Übung",
+            "meals": "FLeisch",
+            "alcohol": "Alkohol",
+            "notes": "Bemerkung",
             "user": "User"
         }
     }

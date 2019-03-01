@@ -3,7 +3,9 @@ package io.smart7.health.web.rest;
 import io.smart7.health.HealthPointsApp;
 
 import io.smart7.health.domain.Points;
+import io.smart7.health.domain.User;
 import io.smart7.health.repository.PointsRepository;
+import io.smart7.health.repository.UserRepository;
 import io.smart7.health.repository.search.PointsSearchRepository;
 import io.smart7.health.web.rest.errors.ExceptionTranslator;
 
@@ -23,8 +25,10 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.Validator;
+import org.springframework.web.context.WebApplicationContext;
 
 import javax.persistence.EntityManager;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Collections;
@@ -35,9 +39,13 @@ import static io.smart7.health.web.rest.TestUtil.createFormattingConversionServi
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.elasticsearch.index.query.QueryBuilders.queryStringQuery;
 import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.Mockito.*;
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.*;
+
 
 /**
  * Test class for the PointsResource REST controller.
@@ -66,6 +74,9 @@ public class PointsResourceIntTest {
     @Autowired
     private PointsRepository pointsRepository;
 
+    @Autowired
+    private UserRepository userRepository;
+
     /**
      * This repository is mocked in the io.smart7.health.repository.search test package.
      *
@@ -89,6 +100,9 @@ public class PointsResourceIntTest {
     @Autowired
     private Validator validator;
 
+    @Autowired
+    private WebApplicationContext context;
+
     private MockMvc restPointsMockMvc;
 
     private Points points;
@@ -96,7 +110,7 @@ public class PointsResourceIntTest {
     @Before
     public void setup() {
         MockitoAnnotations.initMocks(this);
-        final PointsResource pointsResource = new PointsResource(pointsRepository, mockPointsSearchRepository);
+        final PointsResource pointsResource = new PointsResource(pointsRepository, mockPointsSearchRepository, userRepository);
         this.restPointsMockMvc = MockMvcBuilders.standaloneSetup(pointsResource)
             .setCustomArgumentResolvers(pageableArgumentResolver)
             .setControllerAdvice(exceptionTranslator)
@@ -131,8 +145,15 @@ public class PointsResourceIntTest {
     public void createPoints() throws Exception {
         int databaseSizeBeforeCreate = pointsRepository.findAll().size();
 
+        // Create security-aware mockMvc
+        restPointsMockMvc = MockMvcBuilders
+            .webAppContextSetup(context)
+            .apply(springSecurity())
+            .build();
+
         // Create the Points
         restPointsMockMvc.perform(post("/api/points")
+            .with(user("user"))
             .contentType(TestUtil.APPLICATION_JSON_UTF8)
             .content(TestUtil.convertObjectToJsonBytes(points)))
             .andExpect(status().isCreated());
@@ -197,8 +218,15 @@ public class PointsResourceIntTest {
         // Initialize the database
         pointsRepository.saveAndFlush(points);
 
+        // Create security-aware mockMvc
+        restPointsMockMvc = MockMvcBuilders
+            .webAppContextSetup(context)
+            .apply(springSecurity())
+            .build();
+
         // Get all the pointsList
-        restPointsMockMvc.perform(get("/api/points?sort=id,desc"))
+        restPointsMockMvc.perform(get("/api/points?sort=id,desc")
+            .with(user("admin").roles("ADMIN")))
             .andExpect(status().isOk())
             .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8_VALUE))
             .andExpect(jsonPath("$.[*].id").value(hasItem(points.getId().intValue())))
@@ -347,5 +375,54 @@ public class PointsResourceIntTest {
         assertThat(points1).isNotEqualTo(points2);
         points1.setId(null);
         assertThat(points1).isNotEqualTo(points2);
+    }
+
+
+
+    private void createPointsByWeek(LocalDate thisMonday, LocalDate lastMonday) {
+        User user = userRepository.findOneByLogin("user").get();
+        // Create points in two separate weeks
+        points = new Points(thisMonday.plusDays(2), 1, 1, 1, user);
+        pointsRepository.saveAndFlush(points);
+
+        points = new Points(thisMonday.plusDays(3), 1, 1, 0, user);
+        pointsRepository.saveAndFlush(points);
+
+        points = new Points(lastMonday.plusDays(3), 0, 0, 1, user);
+        pointsRepository.saveAndFlush(points);
+
+        points = new Points(lastMonday.plusDays(4), 1, 1, 0, user);
+        pointsRepository.saveAndFlush(points);
+    }
+
+
+    @Test
+    @Transactional
+    public void getPointsThisWeek() throws Exception {
+        LocalDate today = LocalDate.now();
+        LocalDate thisMonday = today.with(DayOfWeek.MONDAY);
+        LocalDate lastMonday = thisMonday.minusWeeks(1);
+        createPointsByWeek(thisMonday, lastMonday);
+
+        // create security-aware mockMvc
+        restPointsMockMvc = MockMvcBuilders
+            .webAppContextSetup(context)
+            .apply(springSecurity())
+            .build();
+
+        // Get all the points
+        restPointsMockMvc.perform(get("/api/points")
+            .with(user("user").roles("USER")))
+            .andExpect(status().isOk())
+            .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+            .andExpect(jsonPath("$", hasSize(4)));
+
+        // Get the points for this week only
+        restPointsMockMvc.perform(get("/api/points-this-week")
+            .with(user("user").roles("USER")))
+            .andExpect(status().isOk())
+            .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+            .andExpect(jsonPath("$.week").value(thisMonday.toString()))
+            .andExpect(jsonPath("$.points").value(5));
     }
 }
