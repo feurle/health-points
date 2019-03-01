@@ -1,0 +1,38 @@
+{
+    "generator-jhipster": {
+        "promptValues": {
+            "packageName": "io.smart7.health",
+            "nativeLanguage": "de"
+        },
+        "jhipsterVersion": "5.8.2",
+        "applicationType": "monolith",
+        "baseName": "HealthPoints",
+        "packageName": "io.smart7.health",
+        "packageFolder": "io/smart7/health",
+        "serverPort": "8080",
+        "authenticationType": "jwt",
+        "cacheProvider": "ehcache",
+        "enableHibernateCache": true,
+        "websocket": false,
+        "databaseType": "sql",
+        "devDatabaseType": "h2Disk",
+        "prodDatabaseType": "mysql",
+        "searchEngine": "elasticsearch",
+        "messageBroker": false,
+        "serviceDiscoveryType": false,
+        "buildTool": "gradle",
+        "enableSwaggerCodegen": false,
+        "jwtSecretKey": "YTMyYWNiMWIwNzg2YmE0YTZiN2JhZTBhMDM5MTkzOGJjM2UyZWM2N2MyZDIxYTMyMGZmZDk5OTdhNDA2OGRiZGJkNjc1OTRlMGE2YThlY2MzYzY3YjdkYWViMjdhNTk3N2YzOTk3YmZiZGUzMDliZjg0MzE4M2VlYzcwMzk1YjI=",
+        "clientFramework": "angularX",
+        "useSass": true,
+        "clientPackageManager": "npm",
+        "testFrameworks": [],
+        "jhiPrefix": "jhi",
+        "entitySuffix": "",
+        "dtoSuffix": "DTO",
+        "otherModules": [],
+        "enableTranslation": true,
+        "nativeLanguage": "de",
+        "languages": ["de", "en", "sv"]
+    }
+}
